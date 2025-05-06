@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tic Tac Toe - 2D Game Style</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('https://img.freepik.com/free-vector/cartoon-forest-landscape-endless-nature-background-computer-games-nature-tree-outdoor-plant-green-natural-environment-wood_107791-17080.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      backdrop-filter: brightness(0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .game {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      gap: 10px;
+      margin: 20px;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.8);
+      font-size: 2em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 4px solid #000;
+      border-radius: 10px;
+      transition: transform 0.2s, background 0.3s;
+    }
+
+    .cell:hover {
+      transform: scale(1.05);
+    }
+
+    .cell.X {
+      color: #3498db;
+    }
+
+    .cell.O {
+      color: #e74c3c;
+    }
+
+    .cell.win {
+      border-color: #2ecc71;
+      background-color: #b3ffcc;
+    }
+
+    #status {
+      font-size: 1.5em;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.4);
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+
+    #overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    #overlay button {
+      background: white;
+      color: #333;
+      font-size: 1.5em;
+      padding: 15px 30px;
+      border: 2px solid #4CAF50;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.3s;
+    }
+
+    #overlay button:hover {
+      background: #e1ffe1;
+    }
+
+    .boy {
+      position: absolute;
+      bottom: 50px;
+      width: 120px;
+      height: auto;
+      z-index: 1;
+    }
+
+    .boy-left {
+      left: 30px;
+    }
+
+    .boy-right {
+      right: 30px;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+  </style>
+</head>
+<body>
+
+  <img src="https://cdn.pixabay.com/photo/2022/11/24/18/48/boy-7616300_960_720.png" class="boy boy-left" alt="Boy Left" />
+  <img src="https://cdn.pixabay.com/photo/2020/07/06/06/50/boy-5375152_960_720.png" class="boy boy-right" alt="Boy Right" />
+
+  <div id="status">Player X's turn</div>
+  <div class="game" id="game"></div>
+
+  <div id="overlay">
+    <button id="overlayRestartBtn">🔁 Restart Game</button>
+  </div>
+
+  <canvas id="fireworks"></canvas>
+
+  <!-- Sounds -->
+  <audio id="clickSound" src="https://freesound.org/data/previews/522/522205_11576122-lq.mp3"></audio>
+  <audio id="winSound" src="https://freesound.org/data/previews/276/276033_4773315-lq.mp3"></audio>
+
+  <script>
+    const gameContainer = document.getElementById("game");
+    const statusDiv = document.getElementById("status");
+    const overlay = document.getElementById("overlay");
+    const overlayRestartBtn = document.getElementById("overlayRestartBtn");
+    const clickSound = document.getElementById("clickSound");
+    const winSound = document.getElementById("winSound");
+
+    let board = Array(9).fill(null);
+    let currentPlayer = "X";
+    let gameActive = true;
+
+    function handleClick(e) {
+      const index = e.target.dataset.index;
+      if (!gameActive || board[index]) return;
+      board[index] = currentPlayer;
+      e.target.textContent = currentPlayer;
+      e.target.classList.add(currentPlayer);
+      clickSound.currentTime = 0;
+      clickSound.play();
+      checkWin();
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      if (gameActive) statusDiv.textContent = `Player ${currentPlayer}'s turn`;
+    }
+
+    function checkWin() {
+      const winCombos = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+
+      for (let combo of winCombos) {
+        const [a,b,c] = combo;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          gameActive = false;
+          document.querySelectorAll(".cell")[a].classList.add("win");
+          document.querySelectorAll(".cell")[b].classList.add("win");
+          document.querySelectorAll(".cell")[c].classList.add("win");
+          statusDiv.textContent = `🎆 Player ${board[a]} wins! 🎇`;
+          winSound.currentTime = 0;
+          winSound.play();
+          showFireworks();
+          overlay.style.display = "flex";
+          return;
+        }
+      }
+
+      if (!board.includes(null)) {
+        statusDiv.textContent = "🤝 It's a tie!";
+        overlay.style.display = "flex";
+        gameActive = false;
+      }
+    }
+
+    function restartGame() {
+      board = Array(9).fill(null);
+      currentPlayer = "X";
+      gameActive = true;
+      statusDiv.textContent = "Player X's turn";
+      overlay.style.display = "none";
+      gameContainer.innerHTML = "";
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.dataset.index = i;
+        cell.addEventListener("click", handleClick);
+        gameContainer.appendChild(cell);
+      }
+    }
+
+    overlayRestartBtn.addEventListener("click", restartGame);
+    restartGame();
+
+    // Simple Fireworks Animation
+    const canvas = document.getElementById("fireworks");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let particles = [];
+
+    function showFireworks() {
+      for (let i = 0; i < 50; i++) {
+        particles.push({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+          dx: Math.random() * 4 - 2,
+          dy: Math.random() * 4 - 2,
+          size: Math.random() * 5 + 2,
+          color: `hsl(${Math.random() * 360}, 100%, 60%)`,
+          life: 60
+        });
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p, i) => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        p.x += p.dx;
+        p.y += p.dy;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+</body>
+</html>
